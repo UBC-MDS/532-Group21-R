@@ -17,7 +17,7 @@ get_topbtm_data <- function(data, stat, year_list = c(1968, 2015)){
 plot_line <- function(stat = "children_per_woman"){
   data <- get_topbtm_data(df, stat)
   
-  line_plot <- ggplot(countries, aes(x = year,
+  line_plot <- ggplot(data, aes(x = year,
                                    y = !!sym(stat),
                                    color = country)) + 
     geom_line()
@@ -40,5 +40,5 @@ plot_bar <- function(stat = "children_per_woman") {
 
 plot_line(stat = "child_mortality")
 
-plot_bar(stat = "child_mortality")
+#plot_bar(stat = "child_mortality")
 

@@ -1,5 +1,6 @@
 library(here)
 library(tidyverse)
+library(plotly)
 
 df <- read_csv(here("data", "processed", "gapminder_processed.csv"))
 
@@ -25,6 +26,7 @@ plot_line <- function(stat = "children_per_woman"){
   line_plot
 }
 
+
 plot_bar <- function(stat = "children_per_woman") {
   data <- get_topbtm_data(df, stat)
   
@@ -38,7 +40,26 @@ plot_bar <- function(stat = "children_per_woman") {
   bar_plot
 }
 
-plot_line(stat = "child_mortality")
+
+plot_map <- function(stat = "children_per_woman") {
+  data <- df
+  
+  map_plot <- plot_ly(data,
+                      type = 'choropleth', 
+                      locations = ~code, 
+                      z = data[[stat]], 
+                      text = ~country,
+                      color = data[[stat]],
+                      colors = 'Purples') %>%
+    layout(title = stat)
+  
+  map_plot
+}
+
+
+plot_map(stat = "life_expectancy")
+
+#plot_line(stat = "child_mortality")
 
 #plot_bar(stat = "child_mortality")
 

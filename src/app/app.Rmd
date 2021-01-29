@@ -1,0 +1,335 @@
+---
+title: "app"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(devtools)
+library(dash)
+library(dashHtmlComponents)
+library(tidyverse)
+library(dashBootstrapComponents)
+library(dashCoreComponents)
+```
+
+```{r}
+# Read in global data
+gapminder = read_csv("../data/processed/gapminder_processed.csv") 
+
+```
+
+
+
+
+```{r}
+app = Dash$new(external_stylesheets = dbcThemes$BOOTSTRAP)
+
+app$layout(dbcContainer(list(
+  htmlDiv(
+    style = list(
+      "textAlign" = "center",
+      "color" = "DarkSlateGray",
+      "font-size" = "26px"
+    ),
+    children = htmlH1("GapExpresser")
+  ),
+  
+  htmlHr(),
+  dbcRow(list(dbcCol(control_panel,
+                     md = 4,),
+              dbcCol(list(
+                dbcRow(world_map, align="center"),
+                dbcRow(list(
+                  dbcCol(list(
+                    bar
+                    ), md=6), 
+                  dbcCol(list(
+                    line
+                    ), md=6))
+                  ),
+                htmlSmall(
+                            "Note: empty plots mean that we don't have data based on your selection"
+                        )
+              ), md = 8
+              )),
+         align = "center")
+),
+fluid = TRUE,))
+
+
+
+app$callback(
+  list(output("sub_region", "options")),
+  list(input("region", "value")),
+  function(selection) {
+    #'@description Select sub regions to display based on region filter selection
+    #'
+    #'@param region string. Selection from the Region filter
+    #'
+    #'@returns opt list. Options list for sub region belonging to the selected region
+    #'    
+    #'
+    #'@example  
+    #'get_subregion("Asia")  
+
+    if (!is.null(selection)){
+      subs = gapminder %>%
+        filter(region == selection) %>%
+        select(sub_region) %>%
+        unique() %>%
+        as.list()
+    }else{
+      subs = gapminder %>%
+        select(sub_region) %>%
+        unique() %>%
+        as.list()
+    }
+    subs
+  }
+)
+
+# app$callback(
+#   list(output("world_map", "srcDoc")),
+#   list(input("stat", "value"),
+#        input("region", "value"),
+#        input("sub_region", "value"),
+#        input("income_grp", "value"),
+#        input("year", "value"),)
+#   
+# )
+
+
+
+
+
+
+
+
+
+
+
+
+app$run_server(debug = T)
+```
+```{r}
+
+#control panel
+
+
+control_panel <- dbcCard(
+  list(
+    # control panel title
+    htmlH2("Control Panel", className = "text-center"),
+    
+    
+    # filter for Statistic of Interest
+    htmlHr(),
+    dbcFormGroup(list(
+      htmlH5("1. Statistic of Interest", className = "text-left"),
+      dccRadioItems(
+        id = "stat",
+        options = list(
+          list("label" = "Life Expectancy", "value" = "life_expectancy"),
+          list("label" = "Education Ratio", "value" = "education_ratio"),
+          list("label" = "Population Density", "value" = "pop_density"),
+          list("label" = "Child Mortality", "value" = "child_mortality"),
+          list("label" = "Children per Woman", "value" = "children_per_woman")
+        ),
+        value = "life_expectancy",
+        labelStyle = list("display" = "block")
+      )
+    )),
+    
+    
+    
+    # filter for Region
+    htmlHr(),
+    dbcFormGroup(list(
+      htmlH5("2. Region", className = "text-left"),
+      dccDropdown(
+        id = "region",
+        options = list(
+          list(label = "Asia", value = "asia"),
+          list(label = "Europe", value = "europe"),
+          list(label = "Africa", value = "africa"),
+          list(label = "Americas", value = "americas"),
+          list(label = "Oceania", value = "oceania")
+        ),
+        value = "asia",
+        style = list("width" = "350px", "color" = "#212121")
+      )
+    )),
+    
+    # filter for Sub Region
+    htmlHr(),
+    dbcFormGroup(list(
+      htmlH5("3. Sub Region", className = "text-left"),
+      dccDropdown(
+        id = "sub_region",
+        value = "Asia",
+        style = list("width" = "350px", "color" = "#212121")
+      )
+    )),
+    
+    # filter for Income Group
+    htmlHr(),
+    dbcFormGroup(list(
+      htmlH5("4. Income Group", className = "text-left"),
+      dccDropdown(
+        id = "income_grp",
+        options = list(
+          list(label = "Low", value = "low"),
+          list(label = "Lower middle", value = "lower_middle"),
+          list(label = "Upper middle", value = "upper_middle"),
+          list(label = "High", value = "high")
+        ),
+        value = "lower_middle",
+        style = list("width" = "350px", "color" = "#212121")
+      )
+    )),
+    
+    # filter for population size
+    htmlHr(),
+    dbcFormGroup(list(
+      htmlH5("5. Population Size", className = "text-left"),
+      dccSlider(
+        id = "pop_size",
+        min = 1e4,
+        max = 1.5e9,
+        step = 1e7,
+        marks = list(
+          "10000" = "10,000",
+          "200000000" = "200 M",
+          "500000000" = "500 M",
+          "800000000" = "0.8 B",
+          "1100000000" = "1.1 B",
+          "1500000000" = "1.5 B"
+        ),
+        value = 200000000
+      )
+    )),
+    
+    
+    # filter for year
+    htmlHr(),
+    dbcFormGroup(list(
+      htmlH5("6. Year", className = "text-left"),
+      dccSlider(
+        id = "year",
+        min = 1968,
+        max = 2015,
+        step = 1,
+        marks = list(
+          "1968" = "1968",
+          "1980" = "1980",
+          "2000" = "2000",
+          "2010" = "2010",
+          "2015" = "2015"
+        ),
+        value = 1968,
+      )
+    )),
+    
+    
+    # filter for top5/bot5
+    htmlHr(),
+    dbcFormGroup(list(
+      htmlH5("7. Show me", className = "text-left"),
+      dccRadioItems(
+        id = "top_btm",
+        options = list(
+          list("label" = "Top 5 Countries", "value" = "Top"),
+          list("label" = "Bottom 5 Countries", "value" = "Bottom")
+        ),
+        value = "Bottom",
+        labelStyle = list("display" = "block")
+      )
+    )),
+    
+    
+    htmlSmall(
+      "*Education Ratio calculated as # of years in school men / # of years in school women. Higher values indicate larger gap between the education levels for men and women."
+    )
+    
+  ),
+  color = "secondary",
+  inverse = TRUE,
+  body = TRUE
+  
+)
+```
+
+
+```{r}
+
+#fames 
+
+world_map <- htmlIframe(
+  id = "world_map",
+  style = list(
+    "border-width" = "0",
+    "width" = "100%",
+    "height" = "600px"
+  )
+)
+
+
+bar <- htmlIframe(
+  id = "bar",
+  style = list(
+    "border-width" = "0",
+    "width" = "100%",
+    "height" = "400px"
+  )
+)
+
+line <- htmlIframe(
+  id = "line",
+  style = list(
+    "border-width" = "0",
+    "width" = "100%",
+    "height" = "400px"
+  )
+)
+
+```
+
+```{r}
+#helper function
+
+get_topbtm_data <- function(data, stat, top_btm, year){
+  #'@description Filter data based on top 5 or bottom 5 countries selection
+  #'
+  #'@param data dataframe.  Data to be filtered
+  #'@param stat string. Selection from statistic of interest filter
+  #'@param top_btm string. Selection from Top/Bottom filter
+  #'@param year integer. Year for which the data is displayed, from Year filter
+  #'
+  #'@returns data dataframe. dataset that has been filtered by top 5 or bottom 5 countries
+  #'
+  #'@example get_topbtm_data(data, "education_ratio", "Bottom", [1968, 2015]) 
+  
+
+  
+}
+
+filter_data <- function(region, sub_region, income_grp){
+  #'@description Filter data based on region, sub region and income group selection
+  #'
+  #'@param region string. Selection from the Region filter
+  #'@param sub_region string. Selection from Sub Region filter
+  #'@param income_grp string. Selection from Income Group filter
+  #'
+  #'@returns data dataframe. dataframe that has been filtered on region, sub region and income group selection
+  #'
+  #'@example filter_data(d"Asia", "Western Asia", "Lower middle")
+}
+
+```
+
+

@@ -2,7 +2,7 @@ library(here)
 library(tidyverse)
 library(plotly)
 
-df <- read_csv(here("data", "processed", "gapminder_processed.csv"))
+df <- read_csv(here("data", "processed", "gapminder_processed_codes.csv"))
 
 
 get_topbtm_data <- function(data, stat, year_list = c(1968, 2015)){

@@ -11,7 +11,7 @@ library(plotly)
 
 
 # Read in global data
-gapminder <- read_csv(here("data", "processed", "gapminder_processed.csv"))
+gapminder <- read_csv(here("data", "processed", "gapminder_processed_codes.csv"))
 
 
 
@@ -158,18 +158,18 @@ control_panel <- dbcCard(
 )
 
 
-#frames 
-world_map <- htmlIframe(
-  id = "world_map",
-  style = list(
-    "border-width" = "0",
-    "width" = "100%",
-    "height" = "600px"
-  )
-)
+# #frames 
+# world_map <- htmlIframe(
+#   id = "world_map",
+#   style = list(
+#     "border-width" = "0",
+#     "width" = "100%",
+#     "height" = "600px"
+#   )
+# )
 
 
-#helper function
+#helper functions
 
 get_topbtm_data <- function(data, stat, top_btm, year_range){
   #'@description Filter data based on top 5 or bottom 5 countries selection
@@ -222,30 +222,43 @@ filter_data <- function(region_, sub_region_, income_grp){
   
   if (!is.null(region_) && !is.null(sub_region_) && !is.null(income_grp)) {
       data <- gapminder %>%
-      filter(region == region_, sub_region == sub_region_, income_group == income_grp)
+        filter(region == region_, 
+             sub_region == sub_region_, 
+             income_group == income_grp)
   } else if(!is.null(region_) && is.null(sub_region_) && is.null(income_grp)){
             data <- gapminder %>%
-            filter(region == region_)
+              filter(region == region_)
   } else if(is.null(region_) && !is.null(sub_region_) && is.null(income_grp)){
             data <- gapminder %>%
-            filter(sub_region == sub_region_)
+              filter(sub_region == sub_region_)
   }else if(is.null(region_) && is.null(sub_region_) && !is.null(income_grp)){
             data <- gapminder %>%
-            filter(income_group == income_grp)
+              filter(income_group == income_grp)
   }else if(!is.null(region_) && !is.null(sub_region_) && is.null(income_grp)){
             data <- gapminder %>%
-            filter(region == region_, sub_region == sub_region_)
+              filter(region == region_, 
+                     sub_region == sub_region_)
   }else if(is.null(region_) && !is.null(sub_region_) && !is.null(income_grp)){
             data <- gapminder %>%
-            filter(sub_region == sub_region_, income_group == income_grp)
+              filter(sub_region == sub_region_, 
+                     income_group == income_grp)
   }else if(!is.null(region_) && is.null(sub_region_) && !is.null(income_grp)){
           data <- gapminder %>%
-          filter(region == region_, income_group == income_grp)
+            filter(region == region_, 
+                   income_group == income_grp)
   }else{
     data = gapminder
   }
   data
 }
+
+# Create dictionary for stat labels
+labels <- list(
+  "life_expectancy" = "Life Expectancy",
+  "education_ratio" = "Education Ratio",
+  "pop_density" = "Population Density",
+  "child_mortality" = "Child Mortality",
+  "children_per_woman" = "Children per Woman")
 
 
 app = Dash$new(external_stylesheets = dbcThemes$BOOTSTRAP)
@@ -264,7 +277,7 @@ app$layout(dbcContainer(list(
   dbcRow(list(dbcCol(control_panel,
                      md = 4,),
               dbcCol(list(
-                dbcRow(world_map, align="center"),
+                dbcRow(dccGraph(id = "map")),
                 dbcRow(list(
                   dbcCol(dccGraph(id = "bar"), md=6), 
                   dbcCol(dccGraph(id = "line_chart"), md=6)
@@ -327,6 +340,18 @@ app$callback(
        input("top_btm", "value"),
        input("year_range", "value")),
   function(stat, region, sub_region, income_grp, top_btm, year_range){
+    #'@description Create bar chart for statistic of interested based on selected filters, for top 5 or bottom 5 countries 
+    #'
+    #'@param region string. Selection from the Region filter
+    #'@param sub_region string. Selection from Sub Region filter
+    #'@param income_grp string. Selection from Income Group filter
+    #'@param tom_btm string.  Selection from Top/Bottom filter
+    #'@param year_range list. Selection from Year filter
+    #'
+    #'@returns bar chart. bar chart showing statistic of interest for top 5 or bottom 5 countries,
+    #          in specific region, sub-region, income group and year
+    #'
+    #'@example plot_bar("education_ratio", "Asia", "Western Asia", "Lower middle", "Bottom", [1968, 2015])
 
     # filter by Region, sub-region & Income group
     data <- filter_data(region, sub_region, income_grp)
@@ -339,10 +364,17 @@ app$callback(
       filter(year == max(unlist(year_range)))
 
     bar <- ggplot(data) +
-      aes(x = !!sym(stat), y = country, color = country) +
+      aes(x = !!sym(stat), 
+          y = reorder(country, !!sym(stat)), 
+          fill = country) +
       geom_bar(stat = "identity") +
-      ggthemes::scale_color_tableau()
-
+      labs(title = paste0(labels[[stat]], " - ", top_btm, " 5 Countries for ", max(unlist(year_range))), 
+           x = labels[[stat]], 
+           y = "Country", 
+           fill = "Country") + 
+      theme_classic() + 
+      ggthemes::scale_fill_tableau()
+    
     ggplotly(bar)
   }
 )
@@ -357,7 +389,18 @@ app$callback(
        input("top_btm", "value"),
        input("year_range", "value")),
   function(stat, region, sub_region, income_grp, top_btm, year_range){
-
+    #'@description Create map plot for statsitic of interested based on selected filters
+    #'
+    #'@param region string. Selection from the Region filter
+    #'@param sub_region string. Selection from Sub Region filter
+    #'@param income_grp string. Selection from Income Group filter
+    #'@param tom_btm string.  Selection from Top/Bottom filter
+    #'@param year_range list. Selection from Year filter
+    #'
+    #'@returns map chart. map chart showing statistic of interest for specific region, subregion, income group and year
+    #'
+    #'@example plot_map("education_ratio", "Asia", "Western Asia", "Lower middle", [1968, 2015])
+    
     # filter by Region, sub-region & Income group
     data <- filter_data(region, sub_region, income_grp)
     
@@ -368,15 +411,64 @@ app$callback(
     data <- data %>%
       filter(year %in% (min(unlist(year_range)):max(unlist(year_range))))
     
-    p <- ggplot(data) +
-      aes(x = year, y = !!sym(stat), color = country) +
+    line <- ggplot(data) +
+      aes(x = year, 
+          y = !!sym(stat), 
+          color = country) +
       geom_line() +
+      labs(title = paste0(labels[[stat]], " Trend - ", top_btm, " 5 Countries from ", min(unlist(year_range)), "-", max(unlist(year_range))),
+           x = "Year", 
+           y = labels[[stat]], 
+           colour = "Country") + 
+      theme_classic() + 
       ggthemes::scale_color_tableau()
 
-    ggplotly(p)
+    ggplotly(line)
   }
 )
 
+
+app$callback(
+  output("map", "figure"),
+  list(input("stat", "value"),
+       input("region", "value"),
+       input("sub_region", "value"),
+       input("income_grp", "value"),
+       input("top_btm", "value"),
+       input("year_range", "value")),
+  function(stat, region, sub_region, income_grp, top_btm, year_range){
+    #'@description Create line chart for statistic of interested based on selected filters, for top 5 or bottom 5 countries
+    #'
+    #'@param region string. Selection from the Region filter
+    #'@param sub_region string. Selection from Sub Region filter
+    #'@param income_grp string. Selection from Income Group filter
+    #'@param tom_btm string.  Selection from Top/Bottom filter
+    #'@param year_range list. Selection from Year filter
+    #'
+    #'@returns line chart. line chart showing statistic of interest for top 5 or bottom 5 countries,
+    #          in specific region, sub-region, income group and year range
+    #'
+    #'@example plot_line("education_ratio", "Asia", "Western Asia", "Lower middle", "Bottom", [1968, 2015])
+
+    # filter by Region, sub-region & Income group
+    data <- filter_data(region, sub_region, income_grp)
+
+    #filter on year
+    data <- data %>%
+      filter(year == max(unlist(year_range)))
+    
+    map_plot <- plot_ly(data,
+                        type = 'choropleth', 
+                        locations = ~code, 
+                        z = data[[stat]], 
+                        text = ~country,
+                        color = data[[stat]],
+                        colors = 'Purples') %>%
+      layout(title = paste0(labels[[stat]], " by Country for ", max(unlist(year_range))))
+
+    ggplotly(map_plot)
+  }
+)
 
 
 app$run_server(debug = T)

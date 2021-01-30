@@ -1,11 +1,11 @@
-library(devtools)
+# library(devtools)
 library(dash)
 library(dashHtmlComponents)
 library(tidyverse)
 library(dashBootstrapComponents)
 library(dashCoreComponents)
 library(here)
-library(purrr)
+# library(purrr)
 library(ggplot2)
 library(plotly)
 
@@ -471,5 +471,5 @@ app$callback(
 )
 
 
-app$run_server(debug = T)
+app$run_server(host = '0.0.0.0', debug = F)
 

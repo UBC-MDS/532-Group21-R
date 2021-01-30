@@ -1,11 +1,11 @@
-library(devtools)
+# library(devtools)
 library(dash)
 library(dashHtmlComponents)
 library(tidyverse)
 library(dashBootstrapComponents)
 library(dashCoreComponents)
 library(here)
-library(purrr)
+# library(purrr)
 library(ggplot2)
 library(plotly)
 
